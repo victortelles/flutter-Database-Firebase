@@ -1,4 +1,5 @@
 //Function delete
+/*
 Future<void> deleteProduct(String productId){
   CollectionReference products = FirebaseFirestore.instance.collection('products');
 
@@ -6,3 +7,4 @@ Future<void> deleteProduct(String productId){
     .then((value) => print('Product $productId deleted successfully!'))
     .catchError((error) => print('Failed to delete product: $error'));
 }
+*/

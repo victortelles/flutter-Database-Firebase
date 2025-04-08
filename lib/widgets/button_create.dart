@@ -1,4 +1,5 @@
 //Function Create product
+/*
 Future<void> addProduct(String name, int price, bool available){
   CollectionReference products =  FirebaseFirestore.instance.collection('products');
 
@@ -10,3 +11,4 @@ Future<void> addProduct(String name, int price, bool available){
   .then((value) => print('Product added successfully'))
   .catchError((error) => print('Failed to add product: $error'));
 }
+*/
