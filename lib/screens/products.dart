@@ -1,36 +1,70 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import '../widgets/button_update.dart';   //Widget para boton Actualizar
-import '../widgets/button_delete.dart';   //Widget para boton Eliminar
-import '../widgets/button_create.dart';   //Widget para redireccion ala pantalla de crear
-import '../screens/add_product.dart';     //Pagina con formulario para crear
+import '../widgets/button_delete.dart';
+import '../widgets/button_update.dart';
+import 'package:tarea_14_database/screens/add_product.dart';
 
-class Products extends StatelessWidget {
+class Products extends StatefulWidget {
   const Products({super.key});
 
-  //Extraccion de datos
+  @override
+  State<Products> createState() => _ProductsState();
+}
+
+class _ProductsState extends State<Products> {
+  // Obtenemos productos como Future
   Future<List<QueryDocumentSnapshot>> fetchProducts() async {
-    final snapshot = await FirebaseFirestore.instance.collection('products').get();
+    QuerySnapshot snapshot =
+        await FirebaseFirestore.instance.collection('products').get();
     return snapshot.docs;
   }
 
+  // Muestra diálogo para editar nombre
+  void showEditDialog(String productId, String currentName) {
+    final TextEditingController _newNameController =
+        TextEditingController(text: currentName);
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Editar producto"),
+        content: TextFormField(
+          controller: _newNameController,
+          decoration: const InputDecoration(labelText: "Nuevo nombre"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          BottonUpdate(
+            productId: productId,
+            newName: _newNameController.text.trim(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  //Construir el boddy
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Productos'),
+        title: const Text('Lista de Productos'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
+            tooltip: 'Añadir producto',
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddProduct())
-              );
+                MaterialPageRoute(builder: (_) => const AddProduct()),
+              ).then((_) {
+                if (mounted) {
+                  setState(() {}); // ✅ Solo si aún está en pantalla
+                }
+              });
             },
-            tooltip: "Añadir Producto",
           ),
         ],
       ),
@@ -41,58 +75,51 @@ class Products extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          //Mostrar en pantalla si no hay productos, dejar mensaje
-          if (snapshot.hasData || snapshot.data!.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
-              child: Text('No hay productos registrados'),
+              child: Text(
+                'No hay productos disponibles.',
+                style: TextStyle(fontSize: 18),
+              ),
             );
           }
 
-          //Mostrar productos
           final products = snapshot.data!;
           return ListView.builder(
             itemCount: products.length,
             itemBuilder: (context, index) {
               final product = products[index];
-              final data = product.data() as Map<String, dynamic>;
+              final productId = product.id;
+              final name = product['name'] ?? '';
+              final price = product['price'] ?? 0;
+              final available = product['available'] ?? false;
 
-              //Devolver cards
               return Card(
-                margin: const EdgeInsets.all(8),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
-                  title: Text(data['name']),
-                  subtitle: Text("Precio: \$${data['price']} | Disponible: ${data['available'] ? 'Si' : 'No'}"),
+                  title: Text(name),
+                  subtitle: Text('Precio: \$${price.toString()}'),
                   trailing: Row(
-                    mainAxisAlignment: MainAxisAlignment.min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      ButtonUpdate(productId: product.id, productData: data),
-                      const SizedBox(width: 8,),
-                      ButtonDelete(productId: product.id),
-                    ]
+                      BottonUpdate(
+                        productId: productId,
+                        newName: name, // editable en el diálogo
+                      ),
+                      ButtonDelete(productId: productId),
+                    ],
                   ),
+                  leading: Icon(
+                    available ? Icons.check_circle : Icons.cancel,
+                    color: available ? Colors.green : Colors.red,
+                  ),
+                  onTap: () => showEditDialog(productId, name),
                 ),
               );
             },
           );
-        }
-      )
+        },
+      ),
     );
   }
 }
-
-
-//Function Get a product
-/*
-Future<void> getProducts(){
-  CollectionReference products = FirebaseFirestore.instance.collection('products');
-
-  return products.get()
-    .then((QuerySnapshot snapshot){
-      snapshot.docs.forEach((doc) {
-        print('${doc.id} => ${doc.data()}');
-      });
-    })
-    .catchError((error) => print('Failed to fetch products: $error'));
-}
-
-*/
