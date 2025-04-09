@@ -12,7 +12,7 @@ class Products extends StatefulWidget {
 }
 
 class _ProductsState extends State<Products> {
-  // Obtenemos productos como Future
+  // Obtenemos productos con Future
   Future<List<QueryDocumentSnapshot>> fetchProducts() async {
     QuerySnapshot snapshot =
         await FirebaseFirestore.instance.collection('products').get();
@@ -20,48 +20,80 @@ class _ProductsState extends State<Products> {
   }
 
   // Muestra diálogo para editar nombre, precio y disponibilidad
-  void showEditDialog(String productId, String currentName, int currentPrice, bool currentAvailable) {
+  void showEditDialog(String productId, String currentName, int currentPrice,
+      bool currentAvailable) {
     final TextEditingController _newNameController = TextEditingController(text: currentName);
     final TextEditingController _newPriceController = TextEditingController(text: currentPrice.toString());
     bool _newAvailable = currentAvailable;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Editar producto"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _newNameController,
-              decoration: const InputDecoration(labelText: "Nuevo nombre"),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Editar producto"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                //campo de nombre
+                TextFormField(
+                  controller: _newNameController,
+                  decoration: const InputDecoration(labelText: "Nuevo nombre"),
+                  //Actualiza el Texto
+                  onChanged: (value) {
+                    setState(() {
+                      _newNameController.text = value;
+                    });
+                  },
+                ),
+
+                //Campo de precio
+                TextFormField(
+                  controller: _newPriceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: "Nuevo precio"),
+                  //Actualiza el precio
+                  onChanged: (value) {
+                    setState(() {
+                      _newPriceController.text = value;
+                    });
+                  },
+                ),
+
+                //Campo de switch
+                SwitchListTile(
+                  title: const Text("Disponible"),
+                  value: _newAvailable,
+                  onChanged: (bool value) {
+                    setState(() {
+                    _newAvailable = value;
+                    });
+                  },
+                ),
+              ],
             ),
-            TextFormField(
-              controller: _newPriceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Nuevo precio"),
-            ),
-            SwitchListTile(
-              title: const Text("Disponible"),
-              value: _newAvailable,
-              onChanged: (bool value) {
-                _newAvailable = value;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
-          ),
-          BottonUpdate(
-            productId: productId,
-            newName: _newNameController.text.trim(),
-            newPrice: int.parse(_newPriceController.text.trim()),
-            newAvailable: _newAvailable,
-          ),
-        ],
+            actions: [
+              //Boton de cancelar
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancelar"),
+              ),
+
+              //Icono de boton de actualizar
+              BottonUpdate(
+                productId: productId,
+                newName: _newNameController.text.trim(),
+                newPrice: int.parse(_newPriceController.text.trim()),
+                newAvailable: _newAvailable,
+                onUpdate: () {
+                  this.setState(() {}); // Se actualiza la vista
+                  Navigator.pop(context); // Cierra el diálogo después de actualizar
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -78,10 +110,11 @@ class _ProductsState extends State<Products> {
             onPressed: () {
               Navigator.push(
                 context,
+                //Redireccion a add_products
                 MaterialPageRoute(builder: (context) => const AddProduct()),
-              ).then((context) {
+              ).then((_) {
                 if (mounted) {
-                  setState(() {}); // ✅ Solo si aún está en pantalla
+                  setState(() {});
                 }
               });
             },
@@ -113,24 +146,30 @@ class _ProductsState extends State<Products> {
               final name = product['name'] ?? '';
               final price = product['price'] ?? 0;
               final available = product['available'] ?? false;
+              //print("Producto a editar: $productId, $name, $price, $available"); // Verifica los valores antes de abrir el diálogo
 
+              //Widget de card
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
+                  //Texto
                   title: Text(name),
+                  //Precio
                   subtitle: Text('Precio: \$${price.toString()}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Solo se podrá editar al presionar el ícono de editar
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         tooltip: "Editar",
-                        onPressed: () => showEditDialog(productId, name, price, available),
+                        onPressed: () =>
+                            showEditDialog(productId, name, price, available),
                       ),
                       ButtonDelete(productId: productId),
                     ],
                   ),
+
+                  //Icono de disponibilidad
                   leading: Icon(
                     available ? Icons.check_circle : Icons.cancel,
                     color: available ? Colors.green : Colors.red,

@@ -6,6 +6,7 @@ class BottonUpdate extends StatelessWidget {
   final String newName;
   final int newPrice;
   final bool newAvailable;
+  final VoidCallback onUpdate; // Callback para actualizar la vista
 
   const BottonUpdate({
     super.key,
@@ -13,16 +14,16 @@ class BottonUpdate extends StatelessWidget {
     required this.newName,
     required this.newPrice,
     required this.newAvailable,
+    required this.onUpdate,
   });
 
-
-  //Funcion update
-  Future<void> updateProduct(String productId, String newName, int newPrice, bool newAvailable){
+  // Función update
+  Future<void> updateProduct(String productId, String newName, int newPrice, bool newAvailable) {
     CollectionReference products = FirebaseFirestore.instance.collection('products');
 
     return products.doc(productId).update({'name': newName, 'price': newPrice, 'available': newAvailable})
-      .then((value) => print('Product name updated successfully'))
-      .catchError((error) => print('Failed to update product name: $error'));
+        .then((value) => print('Product name updated successfully'))
+        .catchError((error) => print('Failed to update product name: $error'));
   }
 
   @override
@@ -35,8 +36,8 @@ class BottonUpdate extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Producto actualizado con éxito.')),
         );
+        onUpdate();
       },
     );
   }
 }
-
